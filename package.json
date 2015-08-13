@@ -1,0 +1,24 @@
+{
+  "name": "node-epaper",
+  "version": "0.1.0",
+  "description": "A Nodejs Epaper spi library",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/doganyazar/node-epaper.git"
+  },
+  "author": "Dogan Yazar",
+  "license": "BSD-2-Clause",
+  "bugs": {
+    "url": "https://github.com/doganyazar/node-epaper/issues"
+  },
+  "homepage": "https://github.com/doganyazar/node-epaper#readme",
+  "dependencies": {
+    "async": "^1.4.2",
+    "lodash": "^3.10.1",
+    "pi-spi": "^1.0.0"
+  }
+}

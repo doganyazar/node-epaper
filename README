@@ -1,0 +1,8 @@
+# node-epaper
+A node.js library for epaper displays using spi.
+Tested on Beaglebone.
+
+
+## Things to keep in mind
+Keep the SPI cables short
+Try lower clock speeds in case of failure
