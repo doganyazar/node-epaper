@@ -1,0 +1,17 @@
+{
+    "node": true,
+    "curly": true,
+    "freeze": true,
+    "latedef": "nofunc",
+    "newcap": true,
+    "noarg": true,
+    "noempty": true,
+    "nonew": true,
+    "quotmark": "single",
+    "undef": true,
+    "unused": true,
+    "strict": true,
+    "maxdepth": 4,
+    "maxcomplexity": 5,
+    "maxlen": 100
+}
