@@ -13,3 +13,4 @@ Try lower clock speeds in case of failure
 Initialize pins (enable spi pins, set EN/BUSY pins)
 Generate image from text
 Implement algorithm to convert image to epd
+Currently only supports MpicoSys TC-P74-110_v1.1. Test and add support for other displays.
