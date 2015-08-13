@@ -2,7 +2,14 @@
 A node.js library for epaper displays using spi.
 Tested on Beaglebone.
 
+Check the examples folder to see the usage!
 
 ## Things to keep in mind
 Keep the SPI cables short
 Try lower clock speeds in case of failure
+
+
+##TODO
+Initialize pins (enable spi pins, set EN/BUSY pins)
+Generate image from text
+Implement algorithm to convert image to epd
