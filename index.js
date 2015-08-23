@@ -136,5 +136,48 @@ Epaper.prototype.displayUpdate = function displayUpdate(cb) {
     this._runCommand(command, cb);
 };
 
+//From TCS Developers Guide
+//This format is used in TC-P74-230.
+Epaper.prototype._convertTo1bit_PixelFormatType4 =
+function _convertTo1bit_PixelFormatType4(picData) {
+  var newPicData = new Buffer(picData.length / 8);
+
+  var row = 30;
+  var s = 1;
+
+  for (var i = 0; i < picData.length; i += 16)
+  {
+    newPicData[row-s] =
+      ((picData[i + 6 ] << 7) & 0x80) |
+      ((picData[i + 14] << 6) & 0x40) |
+      ((picData[i + 4 ] << 5) & 0x20) |
+      ((picData[i + 12] << 4) & 0x10) |
+      ((picData[i + 2 ] << 3) & 0x08) |
+      ((picData[i + 10] << 2) & 0x04) |
+      ((picData[i + 0 ] << 1) & 0x02) |
+      ((picData[i + 8 ] << 0) & 0x01);
+
+
+    newPicData[row+30-s] =
+      ((picData[i + 1 ] << 7) & 0x80) |
+      ((picData[i + 9 ] << 6) & 0x40) |
+      ((picData[i + 3 ] << 5) & 0x20) |
+      ((picData[i + 11] << 4) & 0x10) |
+      ((picData[i + 5 ] << 3) & 0x08) |
+      ((picData[i + 13] << 2) & 0x04) |
+      ((picData[i + 7 ] << 1) & 0x02) |
+      ((picData[i + 15] << 0) & 0x01);
+
+    s++;
+
+    if(s == 31){
+      s = 1;
+      row += 60;
+    }
+  }
+
+  return newPicData;
+};
+
 
 module.exports = new Epaper();

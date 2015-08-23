@@ -8,7 +8,7 @@ epaper.init({
 });
 
 function testImage() {
-    var filePath = './samples/text_1bit.epd';
+    var filePath = './samples/PDI74_cay_icelim_1bit.epd';
     epaper.sendEpdFile(filePath, function(err) {
       if (err) {
         return console.log('Error loading the file!');
