@@ -18,6 +18,7 @@
   "homepage": "https://github.com/doganyazar/node-epaper#readme",
   "dependencies": {
     "async": "^1.4.2",
+    "jimp": "^0.2.5",
     "lodash": "^3.10.1",
     "pi-spi": "^1.0.0"
   },

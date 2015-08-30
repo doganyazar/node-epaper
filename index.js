@@ -136,18 +136,95 @@ Epaper.prototype.displayUpdate = function displayUpdate(cb) {
     this._runCommand(command, cb);
 };
 
+function bitsToByte(eightBits) {
+  var byte = 0;
+  for (var i = 0; i < 8 ;i++) {
+    byte += (eightBits[i] << i);
+  }
+
+  return byte;
+}
+
+
+// //Convert from RGBA to 1 byte
+// Epaper.prototype.greyscaleImageTo1Bit = function greyscaleImageTo1Bit(image, luminanceFun){
+//   function luminance(r, g, b) {
+//     return ((r * 0.3) + (g * 0.59) + (b * 0.11)) > 128 ? 1 : 0;
+//   }
+//
+//   var rawImage = image.bitmap.data;
+//   luminanceFun = luminanceFun || luminance;
+//
+//   if (rawImage.length % 32 !== 0) {
+//     throw Error('Not supported raio');
+//   }
+//
+//   var buf = new Buffer(rawImage.length/32);
+//
+//   var bitValues = new Array(8);
+//   for (var i = 0, bit = 0; i < rawImage.length; i += 4){
+//      var r = rawImage[i];
+//      var g = rawImage[i+1];
+//      var b = rawImage[i+2];
+//      var a = rawImage[i+3];
+//
+//      bitValues[bit] = luminanceFun(r, g, b);
+//
+//      if (++bit === 8 ) {
+//        bit = 0;
+//        buf[i/32] = bitsToByte(bitValues);
+//      }
+//   }
+//
+//   return buf;
+// }
+
+//Convert from RGBA to 1 byte
+Epaper.prototype.greyscaleImageTo1Bit = function greyscaleImageTo1Bit(image, luminanceFun){
+  function luminance(r, g, b) {
+    return ((r * 0.3) + (g * 0.59) + (b * 0.11)) > 128 ? 1 : 0;
+  }
+
+  var rawImage = image.bitmap.data;
+  luminanceFun = luminanceFun || luminance;
+
+  if (rawImage.length % 32 !== 0) {
+    throw Error('Not supported raio');
+  }
+
+  var buf = new Buffer(rawImage.length/4);
+
+  for (var i = 0, bit = 0; i < rawImage.length; i += 4){
+     var r = rawImage[i];
+     var g = rawImage[i+1];
+     var b = rawImage[i+2];
+     var a = rawImage[i+3];
+
+     buf[i/4] = luminanceFun(r, g, b);
+  }
+
+  return buf;
+}
+
+
+var headerTCP74230 = new Buffer(
+  [0x3A, 0x01, 0xE0, 0x03, 0x20, 0x01, 0x04, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+
 //From TCS Developers Guide
 //This format is used in TC-P74-230.
 Epaper.prototype._convertTo1bit_PixelFormatType4 =
 function _convertTo1bit_PixelFormatType4(picData) {
-  var newPicData = new Buffer(picData.length / 8);
+  var newPicData = new Buffer(headerTCP74230.length + picData.length / 8);
+
+  headerTCP74230.copy(newPicData);
 
   var row = 30;
   var s = 1;
 
   for (var i = 0; i < picData.length; i += 16)
   {
-    newPicData[row-s] =
+    newPicData[headerTCP74230.length + row-s] =
       ((picData[i + 6 ] << 7) & 0x80) |
       ((picData[i + 14] << 6) & 0x40) |
       ((picData[i + 4 ] << 5) & 0x20) |
@@ -158,7 +235,7 @@ function _convertTo1bit_PixelFormatType4(picData) {
       ((picData[i + 8 ] << 0) & 0x01);
 
 
-    newPicData[row+30-s] =
+    newPicData[headerTCP74230.length + row+30-s] =
       ((picData[i + 1 ] << 7) & 0x80) |
       ((picData[i + 9 ] << 6) & 0x40) |
       ((picData[i + 3 ] << 5) & 0x20) |
