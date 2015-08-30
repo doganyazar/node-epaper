@@ -10,6 +10,10 @@ var sampleEpdPath = './examples/samples/PDI74_2_1bit.epd';
 
 var epaper = require('../index.js');
 
+epaper.init({
+  spiDev: '/dev/spidev1.0',
+  clockSpeed: 1e5
+});
 
 //
 // test('greyscaleImageTo1Bit', function (t) {
@@ -23,8 +27,23 @@ var epaper = require('../index.js');
 //   epaper.greyscaleImageTo1Bit(image);
 // });
 
+// var lenna = new Jimp("/Users/doganyazar/playground/nodeDene/1.jpg", function (err, image) {
+//     this.resize(480, 800) // resize
+//         .write("lenna-small.png") // save
+//         .quality(60) // set JPEG quality
+//         .write("lenna-small.jpg") // save as JPEG
+//         .greyscale() // set greyscale
+//         .write("lena-small-bw.png")
+// });
+
+var newImagePath = './examples/samples/heading.png'
+
+
 test('Epd conversion', function (t) {
-  var sample1BitPng = new Jimp(sample1BitPngPath, function (err, image) {
+  var sample1BitPng = new Jimp(newImagePath, function (err, image) {
+    this.resize(480, 800) // resize
+    .greyscale();
+
       console.log('Data len', image.bitmap.data.length);
       console.log('Data width', image.bitmap.width);
       console.log('Data height', image.bitmap.height);
@@ -36,7 +55,22 @@ test('Epd conversion', function (t) {
       console.log('out', out.length);
 
       fs.writeFile('dodo.epd', out, function(err) {
-        console.log('file write', arguments);
+        if (err) {
+          throw err;
+        }
+
+        epaper.sendEpdFile('dodo.epd', function(err) {
+          if (err) {
+            return console.log('Error loading the file!');
+          }
+
+          epaper.displayUpdate(function(err) {
+            if (err) {
+              return console.log('Error refreshing display');
+            }
+            console.log('Image update successful!');
+          });
+        });
       });
   });
 });
