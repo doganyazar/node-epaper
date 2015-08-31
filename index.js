@@ -4,6 +4,9 @@ var SPI = require('pi-spi');
 var async = require('async');
 var u = require('lodash');
 var fs = require('fs');
+var path = require('path');
+
+var child_process = require('child_process');
 
 // SPI Settings
 // Bit rate – up to 3 MHz
@@ -50,33 +53,61 @@ Epaper.prototype._runCommand = function _runCommand(command, cb) {
   });
 }
 
-//TODO use runCommand and return cb
-Epaper.prototype.getVersion = function getVersion() {
+function parseInfo(infoBuf) {
+  var info = {};
+
+  info.buf = infoBuf;
+  info.str = infoBuf.toString();
+
+  if (info.str) {
+    var splits = info.str.split('-');
+    if (splits[0] === 'MpicoSys TC') {
+      info.size = splits[1];
+      info.version = splits[2];
+    }
+  }
+
+  return info;
+}
+
+Epaper.prototype.getDeviceInfo = function getDeviceInfo(cb) {
   var self = this;
   var command = new Buffer([0x30, 0x01, 0x01, 0x00]);
   self.spi.write(command, function (e,d) {
     if (e) {
-      return console.log('ERROR', e);
+      console.log('ERROR', e);
+      return cb(e);
     }
     self.spi.read(32, function(e, d) {
       if (e) {
-        return console.log('ERROR', e);
+        console.log('ERROR', e);
+        return cb(e);
       }
 
       console.log("READ", d);
       console.log("READ Str", d.toString());
+
+      return cb(null, parseInfo(d));
     });
   });
 };
 
+var gpioInitPath = path.join(path.dirname(fs.realpathSync(__filename)), 'gpio_init.sh')
 
-Epaper.prototype.init = function init(options) {
+Epaper.prototype.init = function init(options, cb) {
   var spiDev = options.spiDev || '/dev/spidev1.0';
   var clockSpeed = options.clockSpeed || 1e5; //100 khz
 
   this.spi = SPI.initialize(spiDev);
   this.spi.dataMode(SPI.mode.CPHA | SPI.mode.CPOL);
   this.spi.clockSpeed(clockSpeed);
+
+  console.log(gpioInitPath);
+  child_process.execFile(gpioInitPath, function(error, stdout, stderr) {
+    console.log(stdout);
+    console.log(stderr);
+    cb(error);
+  });
 };
 
 var MAX_CHUNK_SIZE = 0xFA;
@@ -135,49 +166,6 @@ Epaper.prototype.displayUpdate = function displayUpdate(cb) {
     var command = new Buffer([0x24, 0x01, 0x00]);
     this._runCommand(command, cb);
 };
-
-function bitsToByte(eightBits) {
-  var byte = 0;
-  for (var i = 0; i < 8 ;i++) {
-    byte += (eightBits[i] << i);
-  }
-
-  return byte;
-}
-
-
-// //Convert from RGBA to 1 byte
-// Epaper.prototype.greyscaleImageTo1Bit = function greyscaleImageTo1Bit(image, luminanceFun){
-//   function luminance(r, g, b) {
-//     return ((r * 0.3) + (g * 0.59) + (b * 0.11)) > 128 ? 1 : 0;
-//   }
-//
-//   var rawImage = image.bitmap.data;
-//   luminanceFun = luminanceFun || luminance;
-//
-//   if (rawImage.length % 32 !== 0) {
-//     throw Error('Not supported raio');
-//   }
-//
-//   var buf = new Buffer(rawImage.length/32);
-//
-//   var bitValues = new Array(8);
-//   for (var i = 0, bit = 0; i < rawImage.length; i += 4){
-//      var r = rawImage[i];
-//      var g = rawImage[i+1];
-//      var b = rawImage[i+2];
-//      var a = rawImage[i+3];
-//
-//      bitValues[bit] = luminanceFun(r, g, b);
-//
-//      if (++bit === 8 ) {
-//        bit = 0;
-//        buf[i/32] = bitsToByte(bitValues);
-//      }
-//   }
-//
-//   return buf;
-// }
 
 //Convert from RGBA to 1 byte
 Epaper.prototype.greyscaleImageTo1Bit = function greyscaleImageTo1Bit(image, luminanceFun){

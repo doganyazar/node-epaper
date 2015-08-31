@@ -1,15 +1,12 @@
 'use strict';
 
+var path = require('path');
+var fs = require('fs');
 var epaper = require('../index.js');
 
-epaper.init({
-  spiDev: '/dev/spidev1.0',
-  clockSpeed: 1e5
-});
+var filePath = path.join(path.dirname(fs.realpathSync(__filename)), 'samples/dodo.epd')
 
 function testImage() {
-    var filePath = './samples/dodo.epd';
-    // var filePath = './samples/PDI74_cay_icelim_1bit.epd';
     epaper.sendEpdFile(filePath, function(err) {
       if (err) {
         return console.log('Error loading the file!');
@@ -24,6 +21,13 @@ function testImage() {
     });
 }
 
-epaper.getVersion();
+epaper.init({
+  spiDev: '/dev/spidev1.0',
+  clockSpeed: 1e5
+}, function(err) {
+  if (err) {
+    throw new Error(err);
+  }
 
-testImage();
+  testImage();
+});
