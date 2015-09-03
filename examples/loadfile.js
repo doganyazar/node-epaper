@@ -4,6 +4,8 @@ var path = require('path');
 var fs = require('fs');
 var epaper = require('../index.js');
 
+var gpio = require('../gpio.js');
+
 var filePath = path.join(path.dirname(fs.realpathSync(__filename)), 'samples/dodo.epd')
 
 function testImage() {
@@ -29,5 +31,22 @@ epaper.init({
     throw new Error(err);
   }
 
-  testImage();
+  epaper.getDeviceInfo(function(err, data) {
+    if (err) {
+      throw err;
+    }
+
+    console.log(data);
+  });
+
+  epaper.enable(function(err) {
+    if (err) throw err;
+
+    epaper.isBusy(function(res){
+      console.log('isBusy', res);
+      if (!res) {
+        testImage();
+      }
+    });
+  })
 });

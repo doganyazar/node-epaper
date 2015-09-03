@@ -31,10 +31,10 @@ function Epaper () {
 function resetPointer(cb) {
     cb = cb || function() {};
     var command = new Buffer([0x20, 0x0D, 0x00]);
-    this._runCommand(command, cb);
+    this._runCommand(command, 2, cb);
 }
 
-Epaper.prototype._runCommand = function _runCommand(command, cb) {
+Epaper.prototype._runCommand = function _runCommand(command, readBytes, cb) {
   var self = this;
   self.spi.write(command, function (err) {
     if (err) {
@@ -42,7 +42,7 @@ Epaper.prototype._runCommand = function _runCommand(command, cb) {
       return cb(err);
     }
 
-    self.spi.read(2, function(err, data) {
+    self.spi.read(readBytes, function(err, data) {
       console.log("DUMMY READ", data);
       console.log("DUMMY READ", data.toString());
 
@@ -68,25 +68,21 @@ function parseInfo(infoBuf) {
   return info;
 }
 
+Epaper.prototype.displayUpdate = function displayUpdate(cb) {
+    cb = cb || function() {};
+    var command = new Buffer([0x24, 0x01, 0x00]);
+    this._runCommand(command, 2, cb);
+};
+
 Epaper.prototype.getDeviceInfo = function getDeviceInfo(cb) {
   var self = this;
   var command = new Buffer([0x30, 0x01, 0x01, 0x00]);
-  self.spi.write(command, function (e,d) {
-    if (e) {
-      console.log('ERROR', e);
-      return cb(e);
+
+  this._runCommand(command, 32, function(err, data) {
+    if (err) {
+      return cb(err);
     }
-    self.spi.read(32, function(e, d) {
-      if (e) {
-        console.log('ERROR', e);
-        return cb(e);
-      }
-
-      console.log("READ", d);
-      console.log("READ Str", d.toString());
-
-      return cb(null, parseInfo(d));
-    });
+    return cb(null, parseInfo(data));
   });
 };
 
@@ -165,12 +161,6 @@ Epaper.prototype.sendEpdFile = function sendEpdFile(filePath, cb) {
   imageStream.on('end', function() {
     console.log('Stream End');
   });
-};
-
-Epaper.prototype.displayUpdate = function displayUpdate(cb) {
-    cb = cb || function() {};
-    var command = new Buffer([0x24, 0x01, 0x00]);
-    this._runCommand(command, cb);
 };
 
 //Convert from RGBA to 1 byte
