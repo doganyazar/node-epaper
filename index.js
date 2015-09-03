@@ -4,9 +4,7 @@ var SPI = require('pi-spi');
 var async = require('async');
 var u = require('lodash');
 var fs = require('fs');
-var path = require('path');
-
-var child_process = require('child_process');
+var gpio = require('./gpio.js');
 
 // SPI Settings
 // Bit rate – up to 3 MHz
@@ -92,8 +90,6 @@ Epaper.prototype.getDeviceInfo = function getDeviceInfo(cb) {
   });
 };
 
-var gpioInitPath = path.join(path.dirname(fs.realpathSync(__filename)), 'gpio_init.sh')
-
 Epaper.prototype.init = function init(options, cb) {
   var spiDev = options.spiDev || '/dev/spidev1.0';
   var clockSpeed = options.clockSpeed || 1e5; //100 khz
@@ -102,12 +98,22 @@ Epaper.prototype.init = function init(options, cb) {
   this.spi.dataMode(SPI.mode.CPHA | SPI.mode.CPOL);
   this.spi.clockSpeed(clockSpeed);
 
-  console.log(gpioInitPath);
-  child_process.execFile(gpioInitPath, function(error, stdout, stderr) {
-    console.log(stdout);
-    console.log(stderr);
-    cb(error);
+  return gpio.init(cb);
+};
+
+//pin=1 -> not busy
+Epaper.prototype.isBusy = function isBusy(cb) {
+  return gpio.get(gpio.pins.P8_10, function(err, val) {
+    return cb(val ? false: true);
   });
+};
+
+Epaper.prototype.enable = function enable(cb) {
+  return gpio.set(gpio.pins.P9_12, 0, cb);
+};
+
+Epaper.prototype.disable = function disable(cb) {
+  return gpio.set(gpio.pins.P9_12, 1, cb);
 };
 
 var MAX_CHUNK_SIZE = 0xFA;
