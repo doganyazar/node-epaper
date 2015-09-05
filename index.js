@@ -148,7 +148,7 @@ Epaper.prototype.isBusy = function isBusy(cb) {
     if (err) {
       return cb(err);
     }
-    return cb(val ? false: true);
+    return cb(null, val ? false: true);
   });
 };
 
