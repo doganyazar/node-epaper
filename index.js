@@ -31,7 +31,7 @@ function Epaper () {
 function resetPointer(cb) {
     cb = cb || function() {};
     var command = new Buffer([0x20, 0x0D, 0x00]);
-    this._runCommand(command, 2, cb);
+    this.executeCommand(command, 2, cb);
 }
 
 Epaper.prototype._runCommand = function _runCommand(command, readBytes, cb) {
@@ -48,6 +48,38 @@ Epaper.prototype._runCommand = function _runCommand(command, readBytes, cb) {
 
       return cb(err, data);
     });
+  });
+}
+
+Epaper.prototype.executeCommand = function executeCommand(command, readBytes, cb) {
+  var self = this;
+  async.series([
+    function(callback){
+      self.enable(callback);
+    },
+    function(callback){
+      self.isBusy(function(err, busy) {
+        if (err || busy === true) {
+          return callback(new Error('Busy or not connected!'));
+        }
+
+        return callback();
+      })
+    },
+    function(callback){
+      self._runCommand(command, readBytes, callback);
+    },
+    function(callback){
+      self.disable(callback);
+    },
+  ],
+  function(err, results){
+    if (err) {
+      return cb(err);
+    }
+
+    //return the result from _runCommand
+    return cb(null, results[2]);
   });
 }
 
@@ -71,14 +103,14 @@ function parseInfo(infoBuf) {
 Epaper.prototype.displayUpdate = function displayUpdate(cb) {
     cb = cb || function() {};
     var command = new Buffer([0x24, 0x01, 0x00]);
-    this._runCommand(command, 2, cb);
+    this.executeCommand(command, 2, cb);
 };
 
 Epaper.prototype.getDeviceInfo = function getDeviceInfo(cb) {
   var self = this;
   var command = new Buffer([0x30, 0x01, 0x01, 0x00]);
 
-  this._runCommand(command, 32, function(err, data) {
+  this.executeCommand(command, 32, function(err, data) {
     if (err) {
       return cb(err);
     }
@@ -93,13 +125,29 @@ Epaper.prototype.init = function init(options, cb) {
   this.spi = SPI.initialize(spiDev);
   this.spi.dataMode(SPI.mode.CPHA | SPI.mode.CPOL);
   this.spi.clockSpeed(clockSpeed);
+  var self = this;
 
-  return gpio.init(cb);
+  gpio.init(function(err) {
+    if (err) {
+      return cb(err);
+    }
+
+    self.getDeviceInfo(function (err, deviceInfo) {
+      if (err) {
+        return cb(err);
+      }
+      self.deviceInfo = deviceInfo;
+      return cb(null, self.deviceInfo);
+    });
+  });
 };
 
 //pin=1 -> not busy
 Epaper.prototype.isBusy = function isBusy(cb) {
   return gpio.get(gpio.pins.P8_10, function(err, val) {
+    if (err) {
+      return cb(err);
+    }
     return cb(val ? false: true);
   });
 };

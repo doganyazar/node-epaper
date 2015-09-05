@@ -10,7 +10,6 @@ Try lower clock speeds in case of failure
 
 
 ##TODO
-Before each command, set enable, check isbusy, run command, set disable
 Url2screen: take a screen shot and push it on screen
 Add support for other screen sizes of MpicoSys. Currently only TC-P74-110_v1.1 supported
 Configurable pins: right now hardcoded P8.10 and P9.12 are used.

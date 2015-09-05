@@ -16,20 +16,17 @@ test('init', function (t) {
   epaper.init({
     spiDev: '/dev/spidev1.0',
     clockSpeed: 1e5
-  }, function(err) {
+  }, function(err, data) {
     t.error(err);
     if (err) {
+      console.log('Init err', err);
       process.exit(1);
     }
+
+    var expected = 'MpicoSys TC-';
+
+    t.equal(data.str.slice(0, expected.length), expected);
     t.end();
-  });
-});
-
-test('getDeviceInfo', function (t) {
-  t.plan(1);
-
-  epaper.getDeviceInfo(function(err, info) {
-    t.equal(info.size, 'P74');
   });
 });
 
