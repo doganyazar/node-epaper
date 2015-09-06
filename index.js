@@ -70,7 +70,25 @@ Epaper.prototype.executeCommand = function executeCommand(command, readBytes, cb
       self._runCommand(command, readBytes, callback);
     },
     function(callback){
-      self.disable(callback);
+      //Disabling immediately does not allow the epaper to do the action so wait a bit!
+      function disable () {
+        self.isBusy(function(err, res){
+          console.log('timeout', timeout);
+          if (err || timeout < 0) {
+            return callback(err || new Error('Timeout in disable'));
+          }
+
+          if (res === false) {
+            return self.disable(callback);
+          }
+
+          timeout -= 200;
+          setTimeout(disable, 200);
+        });
+      }
+
+      var timeout = 5000;
+      disable();
     },
   ],
   function(err, results){
