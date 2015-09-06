@@ -53,6 +53,12 @@ Epaper.prototype._runCommand = function _runCommand(command, readBytes, cb) {
 
 Epaper.prototype.executeCommand = function executeCommand(command, readBytes, cb) {
   var self = this;
+
+  var func = command;
+  if (typeof command !== 'function') {
+    func = self._runCommand.bind(self, command, readBytes);
+  }
+
   async.series([
     function(callback){
       self.enable(callback);
@@ -67,7 +73,7 @@ Epaper.prototype.executeCommand = function executeCommand(command, readBytes, cb
       })
     },
     function(callback){
-      self._runCommand(command, readBytes, callback);
+      func(callback);
     },
     function(callback){
       //Disabling immediately does not allow the epaper to do the action so wait a bit!
@@ -78,6 +84,7 @@ Epaper.prototype.executeCommand = function executeCommand(command, readBytes, cb
             return callback(err || new Error('Timeout in disable'));
           }
 
+          console.log('Busy', res);
           if (res === false) {
             return self.disable(callback);
           }
@@ -117,12 +124,6 @@ function parseInfo(infoBuf) {
 
   return info;
 }
-
-Epaper.prototype.displayUpdate = function displayUpdate(cb) {
-    cb = cb || function() {};
-    var command = new Buffer([0x24, 0x01, 0x00]);
-    this.executeCommand(command, 2, cb);
-};
 
 Epaper.prototype.getDeviceInfo = function getDeviceInfo(cb) {
   var self = this;
@@ -228,6 +229,31 @@ Epaper.prototype.sendEpdFile = function sendEpdFile(filePath, cb) {
     console.log('Stream End');
   });
 };
+
+Epaper.prototype.uploadImage = function uploadImage(filePath, cb) {
+  var self = this;
+  function displayUpdate(cb) {
+    var command = new Buffer([0x24, 0x01, 0x00]);
+    self._runCommand(command, 2, cb);
+  }
+
+  function upload(cb) {
+    self.sendEpdFile(filePath, function(err) {
+      if (err) {
+        return cb('Error sending epd', err);
+      }
+
+      displayUpdate(function(err) {
+        if (err) {
+          return cb('Error refreshing display', err);
+        }
+        cb(null, 'Image upload is successful');
+      });
+    });
+  }
+
+  this.executeCommand(upload, 0, cb);
+}
 
 //Convert from RGBA to 1 byte
 Epaper.prototype.greyscaleImageTo1Bit = function greyscaleImageTo1Bit(image, luminanceFun){
