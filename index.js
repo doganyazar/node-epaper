@@ -5,6 +5,7 @@ var async = require('async');
 var u = require('lodash');
 var fs = require('fs');
 var gpio = require('./gpio.js');
+var imageUtils = require('./image-utils.js');
 
 // SPI Settings
 // Bit rate – up to 3 MHz
@@ -192,10 +193,10 @@ Epaper.prototype._sendBuf = function _sendBuf(buf, maxChunkSize, cb) {
     chunk.unshift.apply(chunk, [INS, P1, P2, Lc]);
 
     var chunkToWrite = new Buffer(chunk);
-    console.log("Chunk Size", chunkToWrite.length, 'Chunk:', chunkToWrite);
+    //console.log("Chunk Size", chunkToWrite.length, 'Chunk:', chunkToWrite);
 
     self.spi.write(chunkToWrite, function(err) {
-      console.log("WRITE CB", arguments);
+      //console.log("WRITE CB", arguments);
       var rxbuf = new Buffer(2);
       callback(err);
     });
@@ -255,82 +256,21 @@ Epaper.prototype.uploadImage = function uploadImage(filePath, cb) {
   this.executeCommand(upload, 0, cb);
 }
 
-//Convert from RGBA to 1 byte
-Epaper.prototype.greyscaleImageTo1Bit = function greyscaleImageTo1Bit(image, luminanceFun){
-  function luminance(r, g, b) {
-    return ((r * 0.3) + (g * 0.59) + (b * 0.11)) > 128 ? 1 : 0;
-  }
-
-  var rawImage = image.bitmap.data;
-  luminanceFun = luminanceFun || luminance;
-
-  if (rawImage.length % 32 !== 0) {
-    throw Error('Not supported raio');
-  }
-
-  var buf = new Buffer(rawImage.length/4);
-
-  for (var i = 0, bit = 0; i < rawImage.length; i += 4){
-     var r = rawImage[i];
-     var g = rawImage[i+1];
-     var b = rawImage[i+2];
-     var a = rawImage[i+3];
-
-     buf[i/4] = luminanceFun(r, g, b);
-  }
-
-  return buf;
-}
-
-
-var headerTCP74230 = new Buffer(
-  [0x3A, 0x01, 0xE0, 0x03, 0x20, 0x01, 0x04, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-
-//From TCS Developers Guide
-//This format is used in TC-P74-230.
-Epaper.prototype._convertTo1bit_PixelFormatType4 =
-function _convertTo1bit_PixelFormatType4(picData) {
-  var newPicData = new Buffer(headerTCP74230.length + picData.length / 8);
-
-  headerTCP74230.copy(newPicData);
-
-  var row = 30;
-  var s = 1;
-
-  for (var i = 0; i < picData.length; i += 16)
-  {
-    newPicData[headerTCP74230.length + row-s] =
-      ((picData[i + 6 ] << 7) & 0x80) |
-      ((picData[i + 14] << 6) & 0x40) |
-      ((picData[i + 4 ] << 5) & 0x20) |
-      ((picData[i + 12] << 4) & 0x10) |
-      ((picData[i + 2 ] << 3) & 0x08) |
-      ((picData[i + 10] << 2) & 0x04) |
-      ((picData[i + 0 ] << 1) & 0x02) |
-      ((picData[i + 8 ] << 0) & 0x01);
-
-
-    newPicData[headerTCP74230.length + row+30-s] =
-      ((picData[i + 1 ] << 7) & 0x80) |
-      ((picData[i + 9 ] << 6) & 0x40) |
-      ((picData[i + 3 ] << 5) & 0x20) |
-      ((picData[i + 11] << 4) & 0x10) |
-      ((picData[i + 5 ] << 3) & 0x08) |
-      ((picData[i + 13] << 2) & 0x04) |
-      ((picData[i + 7 ] << 1) & 0x02) |
-      ((picData[i + 15] << 0) & 0x01);
-
-    s++;
-
-    if(s == 31){
-      s = 1;
-      row += 60;
+Epaper.prototype.uploadFromUrl = function uploadFromUrl(url, cb) {
+  var self = this;
+  imageUtils.capture(url, 'temp.png', function(err) {
+    if (err) {
+      return cb(err);
     }
-  }
 
-  return newPicData;
-};
+    imageUtils.image2Epd('temp.png', 'temp.epd', function(err) {
+      if (err) {
+        return cb(err);
+      }
 
+      self.uploadImage('temp.epd', cb);
+    });
+  });
+}
 
 module.exports = new Epaper();
