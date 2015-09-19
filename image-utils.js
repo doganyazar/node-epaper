@@ -27,6 +27,8 @@ function image2Epd(imagePath, out, cb) {
     console.log('Before Data height', image.bitmap.height);
     this.rotate(90)
 
+    this.write('temp-rotated.png')
+
     console.log('After flip Data width', image.bitmap.width);
     console.log('Data height', image.bitmap.height);
 
@@ -56,14 +58,14 @@ function image2Epd(imagePath, out, cb) {
 //Convert from RGBA to 1 byte
 function greyscaleImageTo1Bit(image, luminanceFun){
   function luminance(r, g, b) {
-    return ((r * 0.3) + (g * 0.59) + (b * 0.11)) > 128 ? 1 : 0;
+    return ((r * 0.3) + (g * 0.59) + (b * 0.11)) > 128 ? 0 : 1;
   }
 
   var rawImage = image.bitmap.data;
   luminanceFun = luminanceFun || luminance;
 
   if (rawImage.length % 32 !== 0) {
-    throw Error('Not supported raio');
+    throw Error('Not supported ratio');
   }
 
   var buf = new Buffer(rawImage.length/4);
