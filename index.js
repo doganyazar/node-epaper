@@ -199,16 +199,18 @@ Epaper.prototype._sendBuf = function _sendBuf(buf, maxChunkSize, cb) {
     var chunkToWrite = new Buffer(chunk);
 
     self.spi.write(chunkToWrite, function(err) {
-      self.spi.read(2, function(err, rxbuf) {
-        console.log("After Chunk", rxbuf);
 
-        self.isBusy(function(err, busy) {
-          console.log('Isbusy', arguments);
-          callback(err);
-        })
+      self._waitUntilNotBusy(1000, function(err) {
+        if (err) {
+          return callback(err);
+        }
+        self.spi.read(2, function(err, rxbuf) {
+          console.log("After Chunk", rxbuf);
+          return callback(err);
+        });
 
-        //return callback(err);
       });
+
     });
   }, function(err){
     // if any of the file processing produced an error, err would equal that error
