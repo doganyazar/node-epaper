@@ -52,6 +52,23 @@ Epaper.prototype._runCommand = function _runCommand(command, readBytes, cb) {
   });
 }
 
+Epaper.prototype._waitUntilNotBusy = function _waitUntilNotBusy(timeout, callback) {
+  var self = this;
+  self.isBusy(function(err, res){
+    console.log('timeout', timeout);
+    if (err || timeout < 0) {
+      return callback(err || new Error('Timeout in disable'));
+    }
+
+    console.log('Busy', res);
+    if (res === false) {
+      return callback(null);
+    }
+
+    setTimeout(self._waitUntilNotBusy.bind(self, timeout-200, callback), 200);
+  });
+}
+
 Epaper.prototype.executeCommand = function executeCommand(command, readBytes, cb) {
   var self = this;
 
@@ -78,25 +95,12 @@ Epaper.prototype.executeCommand = function executeCommand(command, readBytes, cb
     },
     function(callback){
       //Disabling immediately does not allow the epaper to do the action so wait a bit!
-      function disable () {
-        self.isBusy(function(err, res){
-          console.log('timeout', timeout);
-          if (err || timeout < 0) {
-            return callback(err || new Error('Timeout in disable'));
-          }
-
-          console.log('Busy', res);
-          if (res === false) {
-            return self.disable(callback);
-          }
-
-          timeout -= 200;
-          setTimeout(disable, 200);
-        });
-      }
-
-      var timeout = 5000;
-      disable();
+      self._waitUntilNotBusy(5000, function(err) {
+        if (err) {
+          return callback(err);
+        }
+        return self.disable(callback);
+      });
     },
   ],
   function(err, results){
@@ -193,12 +197,18 @@ Epaper.prototype._sendBuf = function _sendBuf(buf, maxChunkSize, cb) {
     chunk.unshift.apply(chunk, [INS, P1, P2, Lc]);
 
     var chunkToWrite = new Buffer(chunk);
-    //console.log("Chunk Size", chunkToWrite.length, 'Chunk:', chunkToWrite);
 
     self.spi.write(chunkToWrite, function(err) {
-      //console.log("WRITE CB", arguments);
-      var rxbuf = new Buffer(2);
-      callback(err);
+      self.spi.read(2, function(err, rxbuf) {
+        console.log("After Chunk", rxbuf);
+
+        self.isBusy(function(err, busy) {
+          console.log('Isbusy', arguments);
+          callback(err);
+        })
+
+        //return callback(err);
+      });
     });
   }, function(err){
     // if any of the file processing produced an error, err would equal that error
@@ -218,12 +228,11 @@ Epaper.prototype._sendBuf = function _sendBuf(buf, maxChunkSize, cb) {
 Epaper.prototype.sendEpdFile = function sendEpdFile(filePath, cb) {
   var self = this;
   var imageStream = fs.createReadStream(filePath);
-  var chunkSize = 120;
 
   imageStream.on('data', function(chunk) {
     console.log('got %d bytes of data', chunk.length);
 
-    self._sendBuf(chunk, chunkSize, cb);
+    self._sendBuf(chunk, 120, cb);
   });
 
   imageStream.on('end', function() {
