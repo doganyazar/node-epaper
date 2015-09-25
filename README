@@ -8,6 +8,16 @@ Check the examples folder to see the usage!
 Keep the SPI cables short
 Try lower clock speeds in case of failure
 
+## Dependencies
+Loading screenshot of url functionality is done using wkhtmltoimage and it needs
+xvfb to be installed since wkhtmltoimage binary in the
+debian repository does not support headless execution.
+It will probably be fixed in the next version. wkhtmltoimage tool is provided in
+wkhtmltopdf package.
+
+    sudo apt-get install wkhtmltoimage
+    sudo apt-get install xvfb
+
 
 ##TODO
 Url2screen: take a screen shot and push it on screen
