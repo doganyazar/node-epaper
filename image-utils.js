@@ -14,7 +14,7 @@ function capture(url, out, cb) {
   var command = util.format('xvfb-run wkhtmltoimage --width 800 --height 480 %s %s', url, out);
   exec(command, function (error, stdout, stderr) {
     if (error) {
-      return cb(err);
+      return cb(error);
     }
 
     cb(null, {stderr: stderr, stdout: stdout});
