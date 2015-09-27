@@ -2,6 +2,8 @@
 
 var epaper = require('../index.js');
 
+var url = process.argv[2] || 'www.facebook.com'
+
 epaper.init({
   spiDev: '/dev/spidev1.0',
   clockSpeed: 1e5
@@ -10,7 +12,7 @@ epaper.init({
     throw new Error(err);
   }
 
-  epaper.uploadFromUrl('http://www.york.ac.uk/teaching/cws/wws/webpage1.html', function(err, data) {
+  epaper.uploadFromUrl(url, function(err, data) {
     console.log(err, data);
   });
 });
