@@ -6,7 +6,7 @@ var url = process.argv[2] || 'www.facebook.com'
 
 epaper.init({
   spiDev: '/dev/spidev1.0',
-  clockSpeed: 1e5
+  clockSpeed: 6e4
 }, function(err) {
   if (err) {
     throw new Error(err);

@@ -184,7 +184,6 @@ Epaper.prototype.disable = function disable(cb) {
   return gpio.set(gpio.pins.P9_12, 1, cb);
 };
 
-var MAX_CHUNK_SIZE = 0xFA;
 Epaper.prototype._sendBuf = function _sendBuf(buf, maxChunkSize, cb) {
   var self = this;
   var chunks = u.chunk(buf, maxChunkSize);
