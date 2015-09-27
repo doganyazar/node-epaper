@@ -146,12 +146,15 @@ Epaper.prototype.init = function init(options, cb) {
   var spiDev = options.spiDev || '/dev/spidev1.0';
   var clockSpeed = options.clockSpeed || 1e5; //100 khz
 
+  this.busyPin = options.busyPin || gpio.pins['P8_10'];
+  this.enablePin = options.enablePin || gpio.pins['P9_12'];
+
   this.spi = SPI.initialize(spiDev);
   this.spi.dataMode(SPI.mode.CPHA | SPI.mode.CPOL);
   this.spi.clockSpeed(clockSpeed);
   var self = this;
 
-  gpio.init(function(err) {
+  gpio.init({busyPin: this.busyPin, enablePin: this.enablePin}, function(err) {
     if (err) {
       return cb(err);
     }
@@ -168,7 +171,7 @@ Epaper.prototype.init = function init(options, cb) {
 
 //pin=1 -> not busy
 Epaper.prototype.isBusy = function isBusy(cb) {
-  return gpio.get(gpio.pins.P8_10, function(err, val) {
+  return gpio.get(this.busyPin, function(err, val) {
     if (err) {
       return cb(err);
     }
@@ -177,11 +180,11 @@ Epaper.prototype.isBusy = function isBusy(cb) {
 };
 
 Epaper.prototype.enable = function enable(cb) {
-  return gpio.set(gpio.pins.P9_12, 0, cb);
+  return gpio.set(this.enablePin, 0, cb);
 };
 
 Epaper.prototype.disable = function disable(cb) {
-  return gpio.set(gpio.pins.P9_12, 1, cb);
+  return gpio.set(this.enablePin, 1, cb);
 };
 
 Epaper.prototype._sendBuf = function _sendBuf(buf, maxChunkSize, cb) {
