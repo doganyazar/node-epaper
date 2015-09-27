@@ -227,22 +227,31 @@ Epaper.prototype._sendBuf = function _sendBuf(buf, maxChunkSize, cb) {
   });
 };
 
-Epaper.prototype.sendEpdFile = function sendEpdFile(filePath, cb) {
+Epaper.prototype.sendEpd = function sendEpd(epd, cb) {
   var self = this;
-  var imageStream = fs.createReadStream(filePath);
 
-  imageStream.on('data', function(chunk) {
-    console.log('got %d bytes of data', chunk.length);
+  //epd can be a filePath or buffer
+  if (typeof epd === 'string') {
+    var filePath = epd;
 
-    self._sendBuf(chunk, 120, cb);
-  });
+    var imageStream = fs.createReadStream(filePath);
 
-  imageStream.on('end', function() {
-    console.log('Stream End');
-  });
+    //TODO not a very smart way. It may arrive in several chunks and then it would fail.
+    imageStream.on('data', function(chunk) {
+      console.log('got %d bytes of data', chunk.length);
+
+      self._sendBuf(chunk, 120, cb);
+    });
+
+    imageStream.on('end', function() {
+      console.log('Stream End');
+    });
+  } else {
+    self._sendBuf(epd, 120, cb);
+  }
 };
 
-Epaper.prototype.uploadImage = function uploadImage(filePath, cb) {
+Epaper.prototype.uploadImage = function uploadImage(epd, cb) {
   var self = this;
   function displayUpdate(cb) {
     var command = new Buffer([0x24, 0x01, 0x00]);
@@ -250,7 +259,7 @@ Epaper.prototype.uploadImage = function uploadImage(filePath, cb) {
   }
 
   function upload(cb) {
-    self.sendEpdFile(filePath, function(err) {
+    self.sendEpd(epd, function(err) {
       if (err) {
         return cb('Error sending epd', err);
       }
@@ -274,12 +283,12 @@ Epaper.prototype.uploadFromUrl = function uploadFromUrl(url, cb) {
       return cb(err);
     }
 
-    imageUtils.image2Epd('temp.png', 'temp.epd', function(err) {
+    imageUtils.image2Epd('temp.png', function(err, epdBuf) {
       if (err) {
         return cb(err);
       }
 
-      self.uploadImage('temp.epd', cb);
+      self.uploadImage(epdBuf, cb);
     });
   });
 }

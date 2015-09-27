@@ -21,13 +21,13 @@ function capture(url, out, cb) {
   });
 }
 
+//If out is provided then image is written at that path.
+//Otherwise result is returned as a buffer
 function image2Epd(imagePath, out, cb) {
   var sample1BitPng = new Jimp(imagePath, function (err, image) {
     console.log('Before Data width', image.bitmap.width);
     console.log('Before Data height', image.bitmap.height);
     this.rotate(90)
-
-    this.write('temp-rotated.png')
 
     console.log('After flip Data width', image.bitmap.width);
     console.log('Data height', image.bitmap.height);
@@ -46,12 +46,17 @@ function image2Epd(imagePath, out, cb) {
     var outBuf = convertTo1bit_PixelFormatType4(oneBitBuf);
     console.log('outBuf', outBuf.length);
 
-    fs.writeFile(out, outBuf, function(err) {
-      if (err) {
-        return cb(err);
-      }
-      return cb(null, out);
-    });
+    if (typeof out === 'function') {
+      cb = out;
+      return cb(null, outBuf)
+    } else {
+      fs.writeFile(out, outBuf, function(err) {
+        if (err) {
+          return cb(err);
+        }
+        return cb(null, out);
+      });
+    }
   });
 }
 
