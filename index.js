@@ -26,7 +26,7 @@ var ResultCodes = {
 
 
 function Epaper () {
-
+  this.gpio = gpio
 }
 
 function resetPointer(cb) {
